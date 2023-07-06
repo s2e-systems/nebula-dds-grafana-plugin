@@ -1,0 +1,22 @@
+[package]
+name = "grafana-sample-backend-plugin-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-stream = "0.3.2"
+async-trait = "0.1.51"
+bytes = "1.1.0"
+chrono = "0.4.19"
+grafana-plugin-sdk = "0.4.2"
+futures = "0.3.17"
+http = "0.2.5"
+serde = { version = "1.0.152", features = ["derive"] }
+thiserror = "1.0.30"
+tokio-stream = "0.1.8"
+tracing = "0.1.29"
+tokio = "1.18.5"
+dust_dds = { version = "0.2" }
+
+[build-dependencies]
+dust_dds_gen = {version = "0.1" }
