@@ -1,17 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "HTTP",
-  "id": "example-http-datasource",
+  "name": "DustDDS",
+  "id": "dustdds-datasource",
   "metrics": true,
   "info": {
     "description": "",
     "author": {
-      "name": "Grafana Labs",
-      "url": "https://grafana.com"
+      "name": "S2E Software Systems B.V.",
+      "url": "https://www.s2e-systems.com"
     },
     "keywords": [
-      "example"
+      "Data Distribution Services", "DDS"
     ],
     "logos": {
       "small": "img/logo.svg",
@@ -20,11 +20,11 @@
     "links": [
       {
         "name": "Website",
-        "url": "https://github.com/grafana/grafana-plugin-examples"
+        "url": "https://github.com/s2e-systems/dust-dds-grafana-plugin"
       },
       {
         "name": "License",
-        "url": "https://github.com/grafana/grafana-plugin-examples/blob/master/LICENSE"
+        "url": "https://github.com/s2e-systems/dust-dds-grafana-plugin/blob/main/LICENSE"
       }
     ],
     "screenshots": [],

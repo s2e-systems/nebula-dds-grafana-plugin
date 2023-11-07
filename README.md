@@ -6,4 +6,4 @@ Grafana plugin for receiving data published using the Data Distribution Service 
 
 The plugin is built locally using Windows Subsystem for Linux (WSL). To install the latest version of Node it is needed to follow the instructions on the [distributions website](https://github.com/nodesource/distributions). The version available from apt-get is too old to compile the Grafana plugin.
 
-Once Node is installed the dependencies can be
+Once Node is installed the package can be built by running `npm install`. Grafana with the plugin can be executed through Docker by running `docker-compose up`.
