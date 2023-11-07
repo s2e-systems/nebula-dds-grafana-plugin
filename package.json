@@ -1,7 +1,7 @@
 {
-  "name": "example-http-datasource",
+  "name": "dustdds-datasource",
   "version": "1.0.0",
-  "description": "An example plugin for Grafana",
+  "description": "Data source plugin for receiving data published using the Data Distribution Service (DDS). This plugin gets the data by interfacing with the DustDDSWeb software using a REST api.",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
     "dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
@@ -13,11 +13,11 @@
     "test": "jest --watch --onlyChanged",
     "typecheck": "tsc --noEmit"
   },
-  "repository": "github:grafana/grafana-plugin-examples",
+  "repository": "github:s2e-systems/dust-dds-grafana-plugin",
   "author": "Grafana Labs",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/grafana/grafana-plugin-examples/issues",
+    "url": "https://www.s2e-systems.com",
     "email": "plugins@grafana.com"
   },
   "devDependencies": {
