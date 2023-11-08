@@ -82,11 +82,13 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
    * Checks whether we can connect to the API.
    */
   async testDatasource() {
-    const defaultErrorMessage = 'Cannot connect to API';
+    const defaultErrorMessage = 'Cannot connect to DustDDSWeb server';
 
     try {
-      const response = await this.request('/healthz');
-      if (response.status === 200) {
+      const response = getBackendSrv().fetch<string>({ url: `${this.baseUrl}/dds/rest1/applications?applicationNameExpression=''`, method: 'GET' });
+      let last_response = await lastValueFrom(response);
+
+      if (last_response.status === 200) {
         return {
           status: 'success',
           message: 'Success',
@@ -94,7 +96,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       } else {
         return {
           status: 'error',
-          message: response.statusText ? response.statusText : defaultErrorMessage,
+          message: last_response.statusText ? last_response.statusText : defaultErrorMessage,
         };
       }
     } catch (err) {
