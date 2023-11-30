@@ -16,26 +16,23 @@ export class QueryEditor extends PureComponent<Props> {
     onChange({ ...query, queryText: event.target.value });
   };
 
-  onConstantChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onChange, query, onRunQuery } = this.props;
-    onChange({ ...query, constant: parseFloat(event.target.value) });
-    // executes the query
-    onRunQuery();
+  onTopicNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, topic_name: event.target.value });
   };
 
   render() {
     const query = defaults(this.props.query, defaultQuery);
-    const { queryText, constant } = query;
+    const { queryText, topic_name } = query;
 
     return (
       <HorizontalGroup>
         <FormField
           width={4}
-          value={constant}
-          onChange={this.onConstantChange}
-          label="Constant"
-          type="number"
-          step="0.1"
+          value={topic_name}
+          onChange={this.onTopicNameChange}
+          label="Topic name"
+          type="string"
         />
         <FormField
           labelWidth={8}

@@ -29,6 +29,8 @@ export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions>
       // Register the type
       const query = defaults(target, defaultQuery);
 
+      console.log("Querying topic name: " + query.topic_name);
+
       // getBackendSrv().post<string>(
       //   `${this.baseUrl}/dds/rest1/types`,
       //   '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'

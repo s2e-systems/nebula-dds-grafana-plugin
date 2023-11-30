@@ -2,11 +2,11 @@ import { DataQuery, DataSourceJsonData } from '@grafana/schema';
 
 export interface DustDdsQuery extends DataQuery {
   queryText?: string;
-  constant: number;
+  topic_name: string;
 }
 
 export const defaultQuery: Partial<DustDdsQuery> = {
-  constant: 6.5,
+
 };
 
 export interface DataPoint {
