@@ -16,26 +16,24 @@ import { XMLParser } from 'fast-xml-parser';
 export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOptions> {
   baseUrl: string;
   keep_last_samples: number;
+  domain_id: number;
 
   constructor(instanceSettings: DataSourceInstanceSettings<DustDdsDataSourceOptions>) {
     super(instanceSettings);
 
-    this.keep_last_samples = instanceSettings.jsonData.keep_last_samples || 1000;
     this.baseUrl = instanceSettings.url!;
+    this.domain_id = instanceSettings.jsonData.domain_id || 0;
+    this.keep_last_samples = instanceSettings.jsonData.keep_last_samples || 1000;
   }
 
   async query(options: DataQueryRequest<DustDdsQuery>): Promise<DataQueryResponse> {
-    console.info("Starting query for DDS data with max samples " + this.keep_last_samples);
-
     const promises = options.targets.map(async (target) => {
-      // Register the type
-      const query = defaults(target, defaultQuery);
 
-      console.log("Querying topic name: " + query.topic_name);
+      const query = defaults(target, defaultQuery);
 
       // const create_reader = `
       //   <application name="GrafanaApp"> \
-      //   <domain_participant name="GrafanaParticipant" domain_id="0">  \
+      //   <domain_participant name="GrafanaParticipant" domain_id="${this.domain_id}">  \
       //   <topic name="Square" register_type_ref="ShapeType"/> \
       //   <subscriber name="sub"> \
       //     <data_reader name="dr" topic_ref="Square"> \
@@ -61,7 +59,7 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
 
       let sample_data = await getBackendSrv().get<string>(
         `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/sub/data_readers/dr`,
-
+        { "removeFromReaderCache": "FALSE" }
       );
 
       const parser = new XMLParser();

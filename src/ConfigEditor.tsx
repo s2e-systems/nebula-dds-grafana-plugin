@@ -7,6 +7,15 @@ interface Props extends DataSourcePluginOptionsEditorProps<DustDdsDataSourceOpti
 
 
 export const ConfigEditor: React.FC<Props> = ({ onOptionsChange, options }) => {
+  const onDomainIdChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const jsonData = {
+      ...options.jsonData,
+      domain_id: parseInt(event.target.value, 10)
+    };
+
+    onOptionsChange({ ...options, jsonData });
+  };
+
   const onKeepLastChange = (event: ChangeEvent<HTMLInputElement>) => {
     const jsonData = {
       ...options.jsonData,
@@ -25,6 +34,9 @@ export const ConfigEditor: React.FC<Props> = ({ onOptionsChange, options }) => {
       />
 
       <header>DDS configuration</header>
+      <InlineField label="Domain Participant domain id">
+        <Input value={options.jsonData.domain_id} onChange={onDomainIdChange} placeholder='Domain id number' />
+      </InlineField>
       <InlineField label="Reader maximum samples" tooltip="Setting for History Qos KeepLast">
         <Input value={options.jsonData.keep_last_samples} onChange={onKeepLastChange} placeholder='Max. number of reader samples' />
       </InlineField>
