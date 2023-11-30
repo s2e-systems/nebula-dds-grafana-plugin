@@ -9,14 +9,14 @@ import {
 import { getBackendSrv, isFetchError } from '@grafana/runtime';
 import _ from 'lodash';
 import defaults from 'lodash/defaults';
-import { DataSourceResponse, MyDataSourceOptions, defaultQuery, DustDdsQuery } from './types';
+import { DataSourceResponse, DustDdsDataSourceOptions, defaultQuery, DustDdsQuery } from './types';
 import { lastValueFrom } from 'rxjs';
 import { XMLParser } from 'fast-xml-parser';
 
-export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions> {
+export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOptions> {
   baseUrl: string;
 
-  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+  constructor(instanceSettings: DataSourceInstanceSettings<DustDdsDataSourceOptions>) {
     super(instanceSettings);
 
     this.baseUrl = instanceSettings.url!;
