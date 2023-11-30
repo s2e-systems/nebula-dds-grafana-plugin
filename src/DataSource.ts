@@ -9,61 +9,98 @@ import {
 import { getBackendSrv, isFetchError } from '@grafana/runtime';
 import _ from 'lodash';
 import defaults from 'lodash/defaults';
-import { DataSourceResponse, defaultQuery, MyDataSourceOptions, MyQuery } from './types';
+import { DataSourceResponse, MyDataSourceOptions, defaultQuery, DustDdsQuery } from './types';
 import { lastValueFrom } from 'rxjs';
+import { XMLParser } from 'fast-xml-parser';
 
-export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
+export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions> {
   baseUrl: string;
+  initialize_once: () => void;
 
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
 
     this.baseUrl = instanceSettings.url!;
+    this.initialize_once = (function () {
+      let executed = false;
+      return async function () {
+        if (!executed) {
+
+          // Register the type
+          await lastValueFrom(getBackendSrv().fetch<string>(
+            {
+              url: `${instanceSettings.url}/dds/rest1/types`,
+              method: 'POST',
+              data: '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
+            }
+          ));
+
+          // Create an application with data reader
+          // const create_application_response = await lastValueFrom(getBackendSrv().fetch<string>(
+          //   {
+          //     url: `${instanceSettings.url}dds/rest1/types`,
+          //     method: 'POST',
+          //     data: '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
+          //   }
+          // ));
+
+          executed = true;
+          // do something
+        }
+      }
+    });
   }
 
-  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
+  async query(options: DataQueryRequest<DustDdsQuery>): Promise<DataQueryResponse> {
+    console.info("Starting query for DDS data");
+
     const promises = options.targets.map(async (target) => {
+      // Register the type
       const query = defaults(target, defaultQuery);
-      const response = await this.request('/api/metrics', `query=${query.queryText}`);
+      // const type_response =
 
-      /**
-       * In this example, the /api/metrics endpoint returns:
-       *
-       * {
-       *   "datapoints": [
-       *     {
-       *       Time: 1234567891011,
-       *       Value: 12.5
-       *     },
-       *     {
-       *     ...
-       *   ]
-       * }
-       */
-      const datapoints = response.data.datapoints;
-      if (datapoints === undefined) {
-        throw new Error('Remote endpoint reponse does not contain "datapoints" property.');
+
+      // getBackendSrv().post<string>(
+      //   `${this.baseUrl}/dds/rest1/types`,
+      //   '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
+      // ).finally(
+      //   await getBackendSrv().post(
+      //     `${this.baseUrl}/dds/rest1/applications`,
+      //     ' <application name="GrafanaApp"> \
+      //        <domain_participant name="GrafanaParticipant" domain_id="0">  \
+      //         <topic name="Square" register_type_ref="ShapeType"/> \
+      //         <subscriber name="sub"> \
+      //           <data_reader name="dr" topic_ref="Square"> \
+      //           </data_reader> \
+      //         </subscriber> \
+      //       </domain_participant> \
+      //      </application> \
+      //     '
+      //   )
+      // )
+
+      let sample_data = await getBackendSrv().get<string>(
+        `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/sub/data_readers/dr`,
+      );
+
+      const parser = new XMLParser();
+      let sample_data_obj = parser.parse(sample_data);
+
+      for (const field in sample_data_obj["read_sample_seq"]["ShapeType"]) {
+        console.info("Received " + field + " with value " + sample_data_obj["read_sample_seq"]["ShapeType"][field]);
       }
 
-      const timestamps: number[] = [];
-      const values: number[] = [];
+      const timestamps: number[] = [new Date().getTime()];
+      const x_values: number[] = [sample_data_obj["read_sample_seq"]["ShapeType"]["x"]];
+      const y_values: number[] = [sample_data_obj["read_sample_seq"]["ShapeType"]["y"]];
 
-      for (let i = 0; i < datapoints.length; i++) {
-        if (datapoints[i].Time === undefined) {
-          throw new Error(`Data point ${i} does not contain "Time" property`);
-        }
-        if (datapoints[i].Value === undefined) {
-          throw new Error(`Data point ${i} does not contain "Value" property`);
-        }
-        timestamps.push(datapoints[i].Time);
-        values.push(datapoints[i].Value);
-      }
 
       return new MutableDataFrame({
         refId: query.refId,
         fields: [
           { name: 'Time', type: FieldType.time, values: timestamps },
-          { name: 'Value', type: FieldType.number, values: values },
+          { name: 'X', type: FieldType.number, values: x_values },
+          { name: 'Y', type: FieldType.number, values: y_values },
         ],
       });
     });
@@ -79,16 +116,20 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   /**
-   * Checks whether we can connect to the API.
+   * Checks whether we can connect to the DustDDS Web server.
    */
   async testDatasource() {
     const defaultErrorMessage = 'Cannot connect to DustDDSWeb server';
 
     try {
-      const response = getBackendSrv().fetch<string>({ url: `${this.baseUrl}/dds/rest1/applications?applicationNameExpression=''`, method: 'GET' });
-      let last_response = await lastValueFrom(response);
+      const response = await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications?applicationNameExpression=''`,
+          method: 'GET'
+        }
+      ));
 
-      if (last_response.status === 200) {
+      if (response.status === 200) {
         return {
           status: 'success',
           message: 'Success',
@@ -96,7 +137,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       } else {
         return {
           status: 'error',
-          message: last_response.statusText ? last_response.statusText : defaultErrorMessage,
+          message: response.statusText ? response.statusText : defaultErrorMessage,
         };
       }
     } catch (err) {

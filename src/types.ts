@@ -1,11 +1,11 @@
-import { DataQuery, DataSourceJsonData } from '@grafana/data';
+import { DataQuery, DataSourceJsonData } from '@grafana/schema';
 
-export interface MyQuery extends DataQuery {
+export interface DustDdsQuery extends DataQuery {
   queryText?: string;
   constant: number;
 }
 
-export const defaultQuery: Partial<MyQuery> = {
+export const defaultQuery: Partial<DustDdsQuery> = {
   constant: 6.5,
 };
 
