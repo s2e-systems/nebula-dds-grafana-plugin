@@ -22,6 +22,7 @@ export interface DataSourceResponse {
  */
 export interface DustDdsDataSourceOptions extends DataSourceJsonData {
   path?: string;
+  keep_last_samples?: number,
 }
 
 /**

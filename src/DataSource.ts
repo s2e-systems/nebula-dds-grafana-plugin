@@ -15,15 +15,17 @@ import { XMLParser } from 'fast-xml-parser';
 
 export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOptions> {
   baseUrl: string;
+  keep_last_samples: number;
 
   constructor(instanceSettings: DataSourceInstanceSettings<DustDdsDataSourceOptions>) {
     super(instanceSettings);
 
+    this.keep_last_samples = instanceSettings.jsonData.keep_last_samples || 1000;
     this.baseUrl = instanceSettings.url!;
   }
 
   async query(options: DataQueryRequest<DustDdsQuery>): Promise<DataQueryResponse> {
-    console.info("Starting query for DDS data");
+    console.info("Starting query for DDS data with max samples " + this.keep_last_samples);
 
     const promises = options.targets.map(async (target) => {
       // Register the type
@@ -31,36 +33,53 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
 
       console.log("Querying topic name: " + query.topic_name);
 
+      // const create_reader = `
+      //   <application name="GrafanaApp"> \
+      //   <domain_participant name="GrafanaParticipant" domain_id="0">  \
+      //   <topic name="Square" register_type_ref="ShapeType"/> \
+      //   <subscriber name="sub"> \
+      //     <data_reader name="dr" topic_ref="Square"> \
+      //       <datareader_qos> \
+      //         <history> \
+      //           <depth>${this.keep_last_samples}</depth> \
+      //         </history>\
+      //       </datareader_qos> \
+      //     </data_reader> \
+      //   </subscriber> \
+      // </domain_participant> \
+      // </application>`;
+
       // getBackendSrv().post<string>(
       //   `${this.baseUrl}/dds/rest1/types`,
       //   '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
       // ).finally(
       //   await getBackendSrv().post(
       //     `${this.baseUrl}/dds/rest1/applications`,
-      //     ' <application name="GrafanaApp"> \
-      //        <domain_participant name="GrafanaParticipant" domain_id="0">  \
-      //         <topic name="Square" register_type_ref="ShapeType"/> \
-      //         <subscriber name="sub"> \
-      //           <data_reader name="dr" topic_ref="Square"> \
-      //           </data_reader> \
-      //         </subscriber> \
-      //       </domain_participant> \
-      //      </application> \
-      //     '
+      //     create_reader,
       //   )
       // )
 
       let sample_data = await getBackendSrv().get<string>(
         `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/sub/data_readers/dr`,
+
       );
 
       const parser = new XMLParser();
       let sample_data_obj = parser.parse(sample_data);
 
-      const timestamps: number[] = [new Date().getTime()];
-      const x_values: number[] = [sample_data_obj["read_sample_seq"]["ShapeType"]["x"]];
-      const y_values: number[] = [sample_data_obj["read_sample_seq"]["ShapeType"]["y"]];
+      const shape_type_samples = sample_data_obj["read_sample_seq"]["ShapeType"];
+      const sample_rate_ms = 25;
+      const now_timestamp = new Date().getTime();
 
+      let timestamps: number[] = [];
+      let x_values: number[] = [];
+      let y_values: number[] = [];
+
+      shape_type_samples.forEach((value: { [x: string]: number; }, index: number) => {
+        timestamps.push(now_timestamp - index * sample_rate_ms);
+        x_values.push(value["x"]);
+        y_values.push(value["y"]);
+      })
 
       return new MutableDataFrame({
         refId: query.refId,
