@@ -15,40 +15,11 @@ import { XMLParser } from 'fast-xml-parser';
 
 export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions> {
   baseUrl: string;
-  initialize_once: () => void;
 
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
 
     this.baseUrl = instanceSettings.url!;
-    this.initialize_once = (function () {
-      let executed = false;
-      return async function () {
-        if (!executed) {
-
-          // Register the type
-          await lastValueFrom(getBackendSrv().fetch<string>(
-            {
-              url: `${instanceSettings.url}/dds/rest1/types`,
-              method: 'POST',
-              data: '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
-            }
-          ));
-
-          // Create an application with data reader
-          // const create_application_response = await lastValueFrom(getBackendSrv().fetch<string>(
-          //   {
-          //     url: `${instanceSettings.url}dds/rest1/types`,
-          //     method: 'POST',
-          //     data: '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
-          //   }
-          // ));
-
-          executed = true;
-          // do something
-        }
-      }
-    });
   }
 
   async query(options: DataQueryRequest<DustDdsQuery>): Promise<DataQueryResponse> {
@@ -57,8 +28,6 @@ export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions>
     const promises = options.targets.map(async (target) => {
       // Register the type
       const query = defaults(target, defaultQuery);
-      // const type_response =
-
 
       // getBackendSrv().post<string>(
       //   `${this.baseUrl}/dds/rest1/types`,
@@ -85,10 +54,6 @@ export class DataSource extends DataSourceApi<DustDdsQuery, MyDataSourceOptions>
 
       const parser = new XMLParser();
       let sample_data_obj = parser.parse(sample_data);
-
-      for (const field in sample_data_obj["read_sample_seq"]["ShapeType"]) {
-        console.info("Received " + field + " with value " + sample_data_obj["read_sample_seq"]["ShapeType"][field]);
-      }
 
       const timestamps: number[] = [new Date().getTime()];
       const x_values: number[] = [sample_data_obj["read_sample_seq"]["ShapeType"]["x"]];
