@@ -9,9 +9,11 @@ import {
 import { getBackendSrv, isFetchError } from '@grafana/runtime';
 import _ from 'lodash';
 import defaults from 'lodash/defaults';
-import { DataSourceResponse, DustDdsDataSourceOptions, defaultQuery, DustDdsQuery } from './types';
+import { DustDdsDataSourceOptions, defaultQuery, DustDdsQuery } from './types';
 import { lastValueFrom } from 'rxjs';
 import { XMLParser } from 'fast-xml-parser';
+
+const STATUS_CODE_CONFLICT = 409;
 
 export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOptions> {
   baseUrl: string;
@@ -28,44 +30,30 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
 
   async query(options: DataQueryRequest<DustDdsQuery>): Promise<DataQueryResponse> {
     const promises = options.targets.map(async (target) => {
-
       const query = defaults(target, defaultQuery);
+      const reader_name = query.refId;
 
-      // const create_reader = `
-      //   <application name="GrafanaApp"> \
-      //   <domain_participant name="GrafanaParticipant" domain_id="${this.domain_id}">  \
-      //   <topic name="Square" register_type_ref="ShapeType"/> \
-      //   <subscriber name="sub"> \
-      //     <data_reader name="dr" topic_ref="Square"> \
-      //       <datareader_qos> \
-      //         <history> \
-      //           <depth>${this.keep_last_samples}</depth> \
-      //         </history>\
-      //       </datareader_qos> \
-      //     </data_reader> \
-      //   </subscriber> \
-      // </domain_participant> \
-      // </application>`;
+      await this.create_dds_web_application();
+      await this.register_dds_web_type();
+      await this.create_dds_web_participant();
+      await this.create_dds_web_query_topic("Square", "ShapeType");
+      await this.create_dds_web_subscriber();
+      await this.create_dds_web_query_reader(reader_name, "Square");
 
-      // getBackendSrv().post<string>(
-      //   `${this.baseUrl}/dds/rest1/types`,
-      //   '<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>'
-      // ).finally(
-      //   await getBackendSrv().post(
-      //     `${this.baseUrl}/dds/rest1/applications`,
-      //     create_reader,
-      //   )
-      // )
-
-      let sample_data = await getBackendSrv().get<string>(
-        `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/sub/data_readers/dr`,
-        { "removeFromReaderCache": "FALSE" }
-      );
+      let sample_data;
+      try {
+        sample_data = await getBackendSrv().get<string>(
+          `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/GrafanaSubscriber/data_readers/${reader_name}`,
+          { "removeFromReaderCache": "FALSE" }
+        );
+      } catch (err) {
+        return new MutableDataFrame();
+      }
 
       const parser = new XMLParser();
       let sample_data_obj = parser.parse(sample_data);
 
-      const shape_type_samples = sample_data_obj["read_sample_seq"]["ShapeType"];
+      const sample_list = sample_data_obj["read_sample_seq"]["sample"];
       const sample_rate_ms = 25;
       const now_timestamp = new Date().getTime();
 
@@ -73,10 +61,11 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
       let x_values: number[] = [];
       let y_values: number[] = [];
 
-      shape_type_samples.forEach((value: { [x: string]: number; }, index: number) => {
+      sample_list.forEach((value: { [x: string]: { [x: string]: { [x: string]: number; }; }; }, index: number) => {
         timestamps.push(now_timestamp - index * sample_rate_ms);
-        x_values.push(value["x"]);
-        y_values.push(value["y"]);
+
+        x_values.push(value["data"]["ShapeType"]["x"]);
+        y_values.push(value["data"]["ShapeType"]["y"]);
       })
 
       return new MutableDataFrame({
@@ -89,14 +78,8 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
       });
     });
 
-    return Promise.all(promises).then((data) => ({ data }));
-  }
 
-  async request(url: string, params?: string) {
-    const response = getBackendSrv().fetch<DataSourceResponse>({
-      url: `${this.baseUrl}${url}${params?.length ? `?${params}` : ''}`,
-    });
-    return lastValueFrom(response);
+    return Promise.all(promises).then((data) => ({ data }));
   }
 
   /**
@@ -138,6 +121,144 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
         status: 'error',
         message,
       };
+    }
+  }
+
+  private async create_dds_web_application() {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications`,
+          method: 'POST',
+          data: '<application name="GrafanaApp"/>',
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
+    }
+  }
+
+  private async create_dds_web_participant() {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants`,
+          method: 'POST',
+          data: `<domain_participant name="GrafanaParticipant" domain_id="${this.domain_id}"/>`,
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
+    }
+  }
+
+  private async create_dds_web_query_topic(topic_name: string, type_name: string) {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/topics`,
+          method: 'POST',
+          data: `<topic name="${topic_name}" register_type_ref="${type_name}"/>`,
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
+    }
+  }
+
+  private async create_dds_web_subscriber() {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers`,
+          method: 'POST',
+          data: `<subscriber name="GrafanaSubscriber"/>`,
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
+    }
+  }
+
+  private async create_dds_web_query_reader(reader_name: string, topic_name: string) {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/applications/GrafanaApp/domain_participants/GrafanaParticipant/subscribers/GrafanaSubscriber/data_readers`,
+          method: 'POST',
+          data: `<data_reader name="${reader_name}" topic_ref="${topic_name}"> \
+                  <datareader_qos> \
+                    <history> \
+                      <depth>${this.keep_last_samples}</depth> \
+                    </history>\
+                  </datareader_qos> \
+                 </data_reader>`,
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
+    }
+  }
+
+  private async register_dds_web_type() {
+    try {
+      await lastValueFrom(getBackendSrv().fetch<string>(
+        {
+          url: `${this.baseUrl}/dds/rest1/types`,
+          method: 'POST',
+          data: `<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>`,
+          showErrorAlert: false,
+        }
+      ));
+    } catch (err) {
+      if (isFetchError(err)) {
+        if (err.status !== STATUS_CODE_CONFLICT) {
+          throw err;
+        }
+      }
+      else {
+        throw err;
+      }
     }
   }
 }
