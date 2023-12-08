@@ -1,21 +1,29 @@
-import { DataQuery, DataSourceJsonData } from '@grafana/data';
+import { DataQuery, DataSourceJsonData } from '@grafana/schema';
 
-export interface MyQuery extends DataQuery {
-  path?: string;
-  constant: number;
-  withStreaming: boolean;
+export interface DustDdsQuery extends DataQuery {
+  queryText?: string;
+  topic_name: string;
 }
 
-export const defaultQuery: Partial<MyQuery> = {
-  constant: 6.5,
-  withStreaming: false,
+export const defaultQuery: Partial<DustDdsQuery> = {
+
 };
 
+export interface DataPoint {
+  Time: number;
+  Value: number;
+}
+export interface DataSourceResponse {
+  datapoints: DataPoint[];
+}
+
 /**
- * These are options configured for each DataSource instance.
+ * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
+export interface DustDdsDataSourceOptions extends DataSourceJsonData {
   path?: string;
+  domain_id?: number,
+  keep_last_samples?: number,
 }
 
 /**
