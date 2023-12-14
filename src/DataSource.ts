@@ -34,11 +34,13 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
       const reader_name = query.refId;
 
       await this.create_dds_web_application();
-      await this.register_dds_web_type();
+      if (query.type_representation) {
+        await this.register_dds_web_type(query.type_representation);
+      }
       await this.create_dds_web_participant();
-      await this.create_dds_web_query_topic("Square", "ShapeType");
+      await this.create_dds_web_query_topic(query.topic_name, query.type_name);
       await this.create_dds_web_subscriber();
-      await this.create_dds_web_query_reader(reader_name, "Square");
+      await this.create_dds_web_query_reader(reader_name, query.topic_name);
 
       let sample_data;
       try {
@@ -240,13 +242,13 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
     }
   }
 
-  private async register_dds_web_type() {
+  private async register_dds_web_type(type_representation: string) {
     try {
       await lastValueFrom(getBackendSrv().fetch<string>(
         {
           url: `${this.baseUrl}/dds/rest1/types`,
           method: 'POST',
-          data: `<types><struct name="ShapeType"><member name="color" type="string"></member><member name="x" type="int32"></member><member name="y" type="int32"></member><member name="shapesize" type="int32"></member></struct></types>`,
+          data: type_representation,
           showErrorAlert: false,
         }
       ));
