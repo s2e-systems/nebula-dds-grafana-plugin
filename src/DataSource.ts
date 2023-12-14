@@ -54,27 +54,27 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
       let sample_data_obj = parser.parse(sample_data);
 
       const sample_list = sample_data_obj["read_sample_seq"]["sample"];
-      const sample_rate_ms = 25;
-      const now_timestamp = new Date().getTime();
 
-      let timestamps: number[] = [];
-      let x_values: number[] = [];
-      let y_values: number[] = [];
+      let fields: Array<{ name: string, type: FieldType, values: number[] }> = [];
 
       sample_list.forEach((value: { [x: string]: { [x: string]: { [x: string]: number; }; }; }, index: number) => {
-        timestamps.push(now_timestamp - index * sample_rate_ms);
+        fields[0] ??= { name: 'Time', type: FieldType.time, values: [] };
+        let timestamp_object = value["read_sample_info"]["source_timestamp"];
+        let timestamp_sec: number = timestamp_object["sec"];
+        let timestamp_nanosec: number = timestamp_object["nanosec"];
+        let timestamp = timestamp_sec * 1000 + timestamp_nanosec / 1000000;
+        fields[0].values.push(timestamp);
 
-        x_values.push(value["data"]["ShapeType"]["x"]);
-        y_values.push(value["data"]["ShapeType"]["y"]);
+        fields[1] ??= { name: 'x', type: FieldType.number, values: [] };
+        fields[1].values.push(value["data"]["ShapeType"]["x"]);
+        fields[2] ??= { name: 'y', type: FieldType.number, values: [] };
+        fields[2].values.push(value["data"]["ShapeType"]["y"]);
+
       })
 
       return new MutableDataFrame({
         refId: query.refId,
-        fields: [
-          { name: 'Time', type: FieldType.time, values: timestamps },
-          { name: 'X', type: FieldType.number, values: x_values },
-          { name: 'Y', type: FieldType.number, values: y_values },
-        ],
+        fields
       });
     });
 

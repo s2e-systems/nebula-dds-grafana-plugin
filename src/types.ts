@@ -1,8 +1,9 @@
 import { DataQuery, DataSourceJsonData } from '@grafana/schema';
 
 export interface DustDdsQuery extends DataQuery {
-  queryText?: string;
   topic_name: string;
+  type_name: string;
+  type_representation?: string;
 }
 
 export const defaultQuery: Partial<DustDdsQuery> = {
