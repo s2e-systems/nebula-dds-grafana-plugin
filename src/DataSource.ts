@@ -61,17 +61,26 @@ export class DataSource extends DataSourceApi<DustDdsQuery, DustDdsDataSourceOpt
 
       sample_list.forEach((value: { [x: string]: { [x: string]: { [x: string]: number; }; }; }, index: number) => {
         fields[0] ??= { name: 'Time', type: FieldType.time, values: [] };
-        let timestamp_object = value["read_sample_info"]["source_timestamp"];
-        let timestamp_sec: number = timestamp_object["sec"];
-        let timestamp_nanosec: number = timestamp_object["nanosec"];
-        let timestamp = timestamp_sec * 1000 + timestamp_nanosec / 1000000;
+        const timestamp_object = value["read_sample_info"]["source_timestamp"];
+        const timestamp_sec: number = timestamp_object["sec"];
+        const timestamp_nanosec: number = timestamp_object["nanosec"];
+        const timestamp = timestamp_sec * 1000 + timestamp_nanosec / 1000000;
         fields[0].values.push(timestamp);
 
-        fields[1] ??= { name: 'x', type: FieldType.number, values: [] };
-        fields[1].values.push(value["data"]["ShapeType"]["x"]);
-        fields[2] ??= { name: 'y', type: FieldType.number, values: [] };
-        fields[2].values.push(value["data"]["ShapeType"]["y"]);
-
+        const data_object = value["data"][query.type_name];
+        const data_fields = Object.keys(data_object)
+        data_fields.forEach((field, index) => {
+          let value = data_object[field];
+          let field_type;
+          if (isNaN(Number(value))) {
+            field_type = FieldType.string;
+          } else {
+            field_type = FieldType.number;
+            value = Number(value);
+          }
+          fields[index + 1] ??= { name: field, type: field_type, values: [] };
+          fields[index + 1].values.push(value);
+        });
       })
 
       return new MutableDataFrame({
