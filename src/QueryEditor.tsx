@@ -48,7 +48,7 @@ export class QueryEditor extends PureComponent<Props> {
           type="string"
         />
         <FormField
-          labelWidth={10}
+          labelWidth={12}
           value={type_representation || ''}
           onChange={this.onTypeRepresentationChange}
           label="Type Representation"
