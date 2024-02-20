@@ -11,19 +11,25 @@ const { FormField } = LegacyForms;
 type Props = QueryEditorProps<DataSource, DustDdsQuery, DustDdsDataSourceOptions>;
 
 export class QueryEditor extends PureComponent<Props> {
-  onQueryTextChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onChange, query } = this.props;
-    onChange({ ...query, queryText: event.target.value });
-  };
 
   onTopicNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onChange, query } = this.props;
     onChange({ ...query, topic_name: event.target.value });
   };
 
+  onTypeNameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, type_name: event.target.value });
+  };
+
+  onTypeRepresentationChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, type_representation: event.target.value });
+  };
+
   render() {
     const query = defaults(this.props.query, defaultQuery);
-    const { queryText, topic_name } = query;
+    const { topic_name, type_name, type_representation } = query;
 
     return (
       <HorizontalGroup>
@@ -35,11 +41,18 @@ export class QueryEditor extends PureComponent<Props> {
           type="string"
         />
         <FormField
-          labelWidth={8}
-          value={queryText || ''}
-          onChange={this.onQueryTextChange}
-          label="Query Text"
-          tooltip="Not used yet"
+          width={4}
+          value={type_name}
+          onChange={this.onTypeNameChange}
+          label="Type name"
+          type="string"
+        />
+        <FormField
+          labelWidth={12}
+          value={type_representation || ''}
+          onChange={this.onTypeRepresentationChange}
+          label="Type Representation"
+          tooltip="XML definition of the type representation to be read. This field is optional and only needed when not using DustDDSWeb"
         />
       </HorizontalGroup>
     );
