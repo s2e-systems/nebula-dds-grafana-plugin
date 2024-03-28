@@ -1,6 +1,6 @@
 # Nebula DDS Datasource
 
-The Nebula DDS Datasource plugin allows you to visualize data published on a Data Distribution Service (DDS) databus from within Grafana.
+The Nebula DDS Datasource plugin allows you to visualize data published on a Data Distribution Service (DDS) databus from within Grafana by connecting to a [Nebula DDS Weblink](https://www.s2e-systems.com/products/nebula-dds-weblink/).
 
 ## Requirements
 

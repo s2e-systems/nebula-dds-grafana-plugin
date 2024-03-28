@@ -2,7 +2,7 @@ version: '3.0'
 
 services:
   grafana:
-    container_name: 's2esoftwaresystemsbv-nebuladds-datasource'
+    container_name: 'nebuladds-datasource'
     platform: 'linux/amd64'
     build:
       context: ./.config
@@ -12,5 +12,5 @@ services:
     ports:
       - 3000:3000/tcp
     volumes:
-      - ./dist:/var/lib/grafana/plugins/s2esoftwaresystemsbv-nebuladds-datasource
+      - ./dist:/var/lib/grafana/plugins/nebuladds-datasource
       - ./provisioning:/etc/grafana/provisioning
