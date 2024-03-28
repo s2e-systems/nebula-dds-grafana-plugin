@@ -1,38 +1,30 @@
 {
-  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "DustDDS",
-  "id": "dustdds-datasource",
+  "name": "Nebula DDS Datasource",
+  "id": "nebuladds-datasource",
   "metrics": true,
+  "backend": true,
+  "executable": "gpx_nebula_dds_datasource",
   "info": {
-    "description": "",
+    "description": "This plugin allows the data published in a data distribution service dds databus to be visualized in grafana through the nebula dds weblink rest api",
     "author": {
       "name": "S2E Software Systems B.V.",
+      "email": "info@s2e-systems.com",
       "url": "https://www.s2e-systems.com"
     },
-    "keywords": [
-      "Data Distribution Services", "DDS"
-    ],
+    "keywords": ["dds", "data distribution service", "nebula dds", "datasource"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
     },
-    "links": [
-      {
-        "name": "Website",
-        "url": "https://github.com/s2e-systems/dust-dds-grafana-plugin"
-      },
-      {
-        "name": "License",
-        "url": "https://github.com/s2e-systems/dust-dds-grafana-plugin/blob/main/LICENSE"
-      }
-    ],
+    "links": [],
     "screenshots": [],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=10.0.3",
+    "grafanaDependency": ">=10.3.3",
     "plugins": []
   }
 }

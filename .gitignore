@@ -4,6 +4,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
 node_modules/
 
@@ -25,6 +26,8 @@ artifacts/
 work/
 ci/
 e2e-results/
+**/cypress/videos
+**/cypress/report.json
 
 # Editor
 .idea

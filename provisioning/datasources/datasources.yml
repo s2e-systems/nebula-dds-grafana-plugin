@@ -1,0 +1,10 @@
+apiVersion: 1
+
+datasources:
+  - name: 'nebula-dds-datasource'
+    type: 'nebuladds-datasource'
+    access: proxy
+    isDefault: true
+    orgId: 1
+    version: 1
+    editable: true
