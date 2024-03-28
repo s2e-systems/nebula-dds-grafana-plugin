@@ -1,7 +1,7 @@
 import React, { ChangeEvent } from 'react';
 import { InlineField, Input } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
-import { DataSource } from '../datasource';
+import { DataSource } from '../DataSource';
 import { NebulaDdsDataSourceOptions, NebulaDdsQuery } from '../types';
 
 type Props = QueryEditorProps<DataSource, NebulaDdsQuery, NebulaDdsDataSourceOptions>;
