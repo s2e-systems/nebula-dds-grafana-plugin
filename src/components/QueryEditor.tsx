@@ -18,7 +18,7 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
   };
 
   const onNumberSamplesChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, number_samples: parseInt(event.target.value) });
+    onChange({ ...query, number_samples: parseInt(event.target.value, 10) });
     // executes the query
     // onRunQuery();
   };
